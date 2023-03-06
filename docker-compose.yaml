@@ -45,7 +45,7 @@ services:
     networks:
       - workscheduleapi
   workschedule-client:
-    image: kesien/workschedule-client
+    image: kesien/workschedule-client:v1.0.0
     container_name: workschedule-client
     restart: on-failure
     ports:
@@ -53,7 +53,7 @@ services:
     networks:
       - workscheduleapi
   workschedule-backend:
-    image: kesien/workschedule-repo
+    image: kesien/workschedule-repo:v1.0.0.0
     container_name: workschedule-backend
     restart: on-failure
     depends_on:
