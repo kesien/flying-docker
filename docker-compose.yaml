@@ -1,0 +1,81 @@
+version: '2'
+
+services:
+  workschedule-postgres:
+    container_name: workschedule-postgres
+    build: ./env/PostgreSQL
+    restart: on-failure
+    environment:
+      POSTGRES_USER: ${DATABASE_USER}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_DB}
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "pg_isready",
+          "-q",
+          "-d",
+          "flying",
+          "-U",
+          "postgres"
+        ]
+      timeout: 45s
+      interval: 10s
+      retries: 10
+    ports:
+      - "5432:5432"
+    networks:
+      - workscheduleapi
+  workschedule-pgadmin:
+    container_name: workschedule-pgadmin
+    build:
+      context: .
+      dockerfile: ./env/PgAdmin/Dockerfile
+      args:
+        DATABASE_USER: ${DATABASE_USER}
+        DATABASE_PASSWORD: ${DATABASE_PASSWORD}
+    restart: on-failure
+
+    environment:
+      PGADMIN_DEFAULT_EMAIL: ${PGADMIN_EMAIL}
+      PGADMIN_DEFAULT_PASSWORD: ${PGADMIN_PASSWORD}
+    ports:
+      - "5050:80"
+    networks:
+      - workscheduleapi
+  workschedule-client:
+    image: kesien/workschedule-client
+    container_name: workschedule-client
+    restart: on-failure
+    ports:
+      - 80:80
+    networks:
+      - workscheduleapi
+  workschedule-backend:
+    image: kesien/workschedule-repo
+    container_name: workschedule-backend
+    restart: on-failure
+    depends_on:
+      - workschedule-postgres
+    ports:
+      - 7040:80
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Production
+      - DATABASE_URL=postgres://${DATABASE_USER}:${DATABASE_PASSWORD}@workschedule-postgres:5432/${DATABASE_DB}
+      - DROPBOX__DIRECTORY=${DROPBOX_DIRECTORY}
+      - DROPBOX__TOKEN=${DROPBOX_TOKEN}
+      - EmailClientSettings__ApiKey=${EMAILCLIENTSETTINGS_APIKEY}
+      - EmailClientSettings__FromEmail=${EMAILCLIENTSETTINGS_FROMEMAIL}
+      - EmailClientSettings__FromName=${EMAILCLIENTSETTINGS_FROMNAME}
+      - EmailClientSettings__NewScheduleTemplateId=${EMAILCLIENTSETTINGS_TEMPLATEID}
+      - JWTSettings__Secret=${JWTSETTINGS_SECRET}
+      - ADMIN_USERNAME=${ADMINSETTINGS_USERNAME}
+      - ADMIN_PASSWORD=${ADMINSETTINGS_PASSWORD}
+      - ADMIN_NAME=${ADMINSETTINGS_NAME}
+    networks:
+      - workscheduleapi
+
+networks:
+  workscheduleapi:
+    name: workscheduleapi
